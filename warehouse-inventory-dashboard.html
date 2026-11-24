@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warehouse | Inventory Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root{--deep:#063f40;--teal:#075b5b;--teal2:#087878;--mint:#dff3ed;--paper:#f2f8f5;--white:#fff;--ink:#153b3b;--muted:#789391;--line:#e2eeea;--shadow:0 12px 30px #063f4012}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px 'DM Sans',sans-serif}button,input,select{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:245px 1fr}.sidebar{background:var(--deep);color:#d8eeea;padding:26px 18px;display:flex;flex-direction:column;gap:28px}.brand{display:flex;align-items:center;gap:12px;padding:0 8px}.brandmark{width:39px;height:39px;border-radius:13px;background:#bce9dc;color:var(--deep);display:grid;place-items:center;font-size:20px;font-weight:700}.brand strong{font:700 17px 'Space Grotesk';letter-spacing:.4px}.brand small{display:block;color:#91b9b2;font-size:10px;letter-spacing:2px;margin-top:3px}.navlabel{font-size:9px;letter-spacing:2px;color:#83aaa4;padding:0 12px;margin-bottom:8px}.nav{display:grid;gap:6px}.nav a{color:#b7d3ce;text-decoration:none;padding:12px 13px;border-radius:12px;display:flex;align-items:center;gap:12px;font-size:13px}.nav a.active,.nav a:hover{background:#ffffff18;color:#fff}.nav .ico{width:19px;text-align:center;font-size:16px}.sidebottom{margin-top:auto;border-top:1px solid #ffffff20;padding:18px 9px 0;color:#8fb8b0;font-size:11px;line-height:1.7}.main{padding:28px 34px 40px;min-width:0}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--teal2);font-weight:700}.topbar h1{font:700 27px 'Space Grotesk';margin:5px 0 0;color:var(--deep)}.top-actions{display:flex;align-items:center;gap:10px}.sync{border:1px solid var(--line);background:white;color:var(--teal);padding:10px 14px;border-radius:12px;cursor:pointer}.sync:disabled{opacity:.6}.profile{width:38px;height:38px;border-radius:50%;background:var(--mint);display:grid;place-items:center;color:var(--teal);font-weight:700}.notice{display:none;background:#fff4df;border:1px solid #f0d9a8;color:#805b19;border-radius:12px;padding:12px 15px;margin-bottom:18px;font-size:12px}.notice.show{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:20px}.stat{background:white;border:1px solid var(--line);border-radius:17px;padding:18px 19px;box-shadow:var(--shadow);position:relative;overflow:hidden}.stat:after{content:"";position:absolute;width:75px;height:75px;border-radius:50%;background:var(--mint);right:-23px;top:-25px;opacity:.8}.statlabel{font-size:11px;color:var(--muted);position:relative;z-index:1}.statvalue{font:700 27px 'Space Grotesk';color:var(--deep);margin-top:9px;position:relative;z-index:1}.statfoot{font-size:10px;color:var(--muted);margin-top:5px}.panel{background:white;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}.panelhead{padding:19px 21px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:15px}.panelhead h2{font:600 16px 'Space Grotesk';margin:0;color:var(--deep)}.sub{font-size:11px;color:var(--muted);margin-top:4px}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.search{border:1px solid var(--line);background:#f8fbfa;border-radius:11px;padding:10px 13px;min-width:230px;outline:none;color:var(--ink)}.search:focus,select:focus{border-color:#69aaa0}.select{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;color:var(--ink);outline:none}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th{background:#f5faf8;color:#6c8985;font-size:10px;text-transform:uppercase;letter-spacing:1px;text-align:left;padding:13px 17px;position:sticky;top:0}td{padding:14px 17px;border-top:1px solid #edf3f1;font-size:12px;color:#315452}tbody tr:hover{background:#f8fcfa}.empty{padding:38px 20px;text-align:center;color:var(--muted);font-size:12px}.status{display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:5px 9px;background:#e6f5ed;color:#26734f;font-size:10px;font-weight:700}.status.low{background:#fff1df;color:#a66a16}.status.zero{background:#fde9e8;color:#b24c46}.footer{display:flex;justify-content:space-between;gap:12px;padding:13px 19px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}.loading{display:flex;align-items:center;gap:9px;color:var(--muted);padding:25px}.dot{width:7px;height:7px;border-radius:50%;background:#28a18e;animation:pulse 1s infinite alternate}@keyframes pulse{to{opacity:.25;transform:scale(.7)}}.smallbtn{border:0;border-radius:9px;background:var(--teal);color:#fff;padding:9px 12px;cursor:pointer;font-size:11px}.hint{font-size:10px;color:var(--muted);line-height:1.6;padding:0 20px 17px}
+@media(max-width:1000px){.app{grid-template-columns:205px 1fr}.main{padding:24px}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.app{display:block}.sidebar{padding:13px 14px;gap:12px}.brand{padding:0}.navlabel,.sidebottom{display:none}.nav{display:flex;overflow:auto}.nav a{white-space:nowrap;padding:9px 11px;font-size:11px}.main{padding:20px 14px}.topbar h1{font-size:22px}.topbar{align-items:flex-start}.stats{gap:9px}.stat{padding:14px}.statvalue{font-size:23px}.panelhead{align-items:flex-start;flex-direction:column}.search{min-width:0;width:100%}.toolbar{width:100%}.select{flex:1}.top-actions{gap:6px}.sync{padding:9px;font-size:11px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="brandmark">W</div><div><strong>WAREHOUSE</strong><small>INVENTORY SYSTEM</small></div></div>
+  <div><div class="navlabel">WORKSPACE</div><nav class="nav">
+    <a class="active" href="#overview"><span class="ico">▦</span> Overview</a>
+    <a href="#inventory"><span class="ico">▤</span> Data Inventaris</a>
+    <a href="#source"><span class="ico">↗</span> Spreadsheet</a>
+  </nav></div>
+  <div class="sidebottom">STOCK CONTROL SYSTEM<br>Connected to Google Sheets<br><span id="sideStatus">Menyiapkan koneksi…</span></div>
+</aside>
+<main class="main">
+  <header class="topbar"><div><div class="eyebrow">WAREHOUSE MANAGEMENT / OVERVIEW</div><h1>Inventory Overview</h1></div><div class="top-actions"><button class="sync" id="refresh">↻ Refresh data</button><div class="profile">WH</div></div></header>
+  <div class="notice" id="notice"></div>
+  <section class="stats" id="overview">
+    <div class="stat"><div class="statlabel">Total baris data</div><div class="statvalue" id="totalRows">—</div><div class="statfoot">Record pada spreadsheet</div></div>
+    <div class="stat"><div class="statlabel">Total item / unit stok</div><div class="statvalue" id="totalStock">—</div><div class="statfoot">Dihitung dari kolom stok yang terdeteksi</div></div>
+    <div class="stat"><div class="statlabel">Stok kosong</div><div class="statvalue" id="zeroStock">—</div><div class="statfoot">Item dengan nilai stok 0</div></div>
+    <div class="stat"><div class="statlabel">Stok perlu perhatian</div><div class="statvalue" id="lowStock">—</div><div class="statfoot">Nilai stok rendah / di bawah 5</div></div>
+  </section>
+  <section class="panel" id="inventory">
+    <div class="panelhead"><div><h2>Data Inventaris</h2><div class="sub" id="tableSub">Seluruh kolom dari sheet akan ditampilkan di tabel ini</div></div>
+      <div class="toolbar"><input class="search" id="search" placeholder="⌕  Cari data inventaris…"><select class="select" id="columnFilter"><option value="">Semua kolom / kategori</option></select><button class="smallbtn" id="csv">Export CSV</button></div>
+    </div>
+    <div class="tablewrap"><div class="loading" id="loading"><span class="dot"></span>Mengambil data dari Google Sheets…</div><table id="dataTable" hidden><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" hidden>Tidak ada data yang cocok.</div></div>
+    <div class="footer"><span id="countInfo">Menunggu data…</span><span id="updated">—</span></div>
+  </section>
+  <section class="panel" id="source">
+    <div class="panelhead"><div><h2>Data source</h2><div class="sub">Sumber data terhubung langsung ke Google Spreadsheet</div></div><a class="smallbtn" href="https://docs.google.com/spreadsheets/d/1lY4cg_O-tfeWTQklXNb8eq3X66AFDaeGf0b86XBhypc/edit?gid=1146131498#gid=1146131498" target="_blank" rel="noopener">Buka Spreadsheet ↗</a></div>
+    <div class="hint">Dashboard ini membaca data secara read-only. Perubahan pada spreadsheet akan terlihat setelah menekan Refresh. Agar GitHub Pages dapat mengambil data, spreadsheet perlu memiliki akses berbagi yang mengizinkan pembacaan publik atau dipublikasikan ke web. Jangan gunakan data sensitif pada sheet publik.</div>
+  </section>
+</main>
+</div>
+<script>
+const SHEET_ID = '1lY4cg_O-tfeWTQklXNb8eq3X66AFDaeGf0b86XBhypc';
+const GID = '1146131498';
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
+let headers=[], rows=[], filtered=[];
+const $ = id => document.getElementById(id);
+function showNotice(msg){$('notice').textContent=msg;$('notice').classList.add('show')}
+function parseGviz(text){
+  const start=text.indexOf('{'), end=text.lastIndexOf('}');
+  if(start<0||end<0) throw new Error('Format data Google Sheets tidak dikenali.');
+  const json=JSON.parse(text.slice(start,end+1));
+  if(json.status==='error') throw new Error(json.errors?.[0]?.detailed_message||'Google Sheets menolak permintaan.');
+  const cols=json.table.cols.map((c,i)=>c.label||c.id||`Kolom ${i+1}`);
+  const data=json.table.rows.map(r=>cols.map((_,i)=>{
+    const cell=r.c?.[i]; if(!cell)return '';
+    return cell.f ?? cell.v ?? '';
+  })).filter(r=>r.some(v=>String(v).trim()!==''));
+  return {headers:cols,rows:data};
+}
+function norm(s){return String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function findStockCols(){return headers.map((h,i)=>({h:norm(h),i})).filter(x=>/(stok|stock|qty|quantity|jumlah|saldo|persediaan)/.test(x.h)).map(x=>x.i)}
+function numeric(v){if(typeof v==='number')return v;let s=String(v??'').replace(/[^\d,.-]/g,'').replace(/\.(?=.*\.)/g,'').replace(',','.');let n=Number(s);return Number.isFinite(n)?n:null}
+function renderStats(){
+  $('totalRows').textContent=rows.length.toLocaleString('id-ID');
+  const cols=findStockCols();let values=rows.map(r=>cols.map(i=>numeric(r[i])).filter(v=>v!==null)).map(a=>a.length?a.reduce((x,y)=>x+y,0):null).filter(v=>v!==null);
+  $('totalStock').textContent=values.length?values.reduce((a,b)=>a+b,0).toLocaleString('id-ID'):'—';
+  $('zeroStock').textContent=values.filter(v=>v===0).length.toLocaleString('id-ID');
+  $('lowStock').textContent=values.filter(v=>v>0&&v<5).length.toLocaleString('id-ID');
+}
+function renderTable(){
+  const q=norm($('search').value), col=$('columnFilter').value;
+  filtered=rows.filter(r=>{
+    const matchText=!q||r.some(v=>norm(v).includes(q));
+    const matchCol=!col||norm(r[Number(col)]).includes(q)||!q;
+    return matchText&&matchCol;
+  });
+  $('thead').innerHTML=headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('');
+  $('tbody').innerHTML=filtered.map(r=>'<tr>'+headers.map((h,i)=>`<td>${cellHtml(h,r[i])}</td>`).join('')+'</tr>').join('');
+  $('dataTable').hidden=!filtered.length;$('empty').hidden=!!filtered.length;
+  $('countInfo').textContent=`Menampilkan ${filtered.length.toLocaleString('id-ID')} dari ${rows.length.toLocaleString('id-ID')} baris`;
+}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function cellHtml(header,value){
+  const h=norm(header),v=String(value??'');
+  if(/^(status|kondisi|keterangan stok)$/.test(h))return `<span class="status">${escapeHtml(v)}</span>`;
+  if(/(stok|stock|qty|quantity|jumlah|saldo|persediaan)/.test(h)){
+    const n=numeric(value);if(n===0)return `<span class="status zero">${escapeHtml(v)}</span>`;if(n!==null&&n<5)return `<span class="status low">${escapeHtml(v)}</span>`;
+  }
+  return escapeHtml(v);
+}
+async function loadData(){
+  $('refresh').disabled=true;$('loading').hidden=false;$('dataTable').hidden=true;$('empty').hidden=true;
+  try{
+    const res=await fetch(GVIZ_URL,{cache:'no-store'});
+    if(!res.ok)throw new Error(`HTTP ${res.status}. Periksa izin akses spreadsheet.`);
+    const parsed=parseGviz(await res.text());
+    headers=parsed.headers;rows=parsed.rows;
+    if(!headers.length)throw new Error('Header sheet kosong atau tab tidak memiliki data.');
+    $('columnFilter').innerHTML='<option value="">Semua kolom / kategori</option>'+headers.map((h,i)=>`<option value="${i}">${escapeHtml(h)}</option>`).join('');
+    renderStats();renderTable();$('loading').hidden=true;
+    $('updated').textContent='Diperbarui '+new Date().toLocaleString('id-ID');
+    $('sideStatus').textContent='● Terhubung';$('sideStatus').style.color='#a6e5c7';
+    $('tableSub').textContent=`${headers.length} kolom • ${rows.length} baris data`;
+    $('notice').classList.remove('show');
+  }catch(err){
+    $('loading').hidden=true;$('sideStatus').textContent='Koneksi belum tersedia';
+    showNotice('Data belum dapat dimuat: '+err.message+' Pastikan spreadsheet dapat dibaca publik, lalu refresh halaman.');
+    $('empty').hidden=false;$('empty').textContent='Belum ada data untuk ditampilkan. Periksa akses Google Spreadsheet.';
+    $('countInfo').textContent='Gagal mengambil data';
+  }finally{$('refresh').disabled=false}
+}
+$('refresh').addEventListener('click',loadData);
+$('search').addEventListener('input',renderTable);
+$('columnFilter').addEventListener('change',renderTable);
+$('csv').addEventListener('click',()=>{
+ if(!headers.length)return;
+ const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const csv=[headers,...filtered].map(r=>r.map(quote).join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='warehouse-inventory.csv';a.click();URL.revokeObjectURL(a.href);
+});
+loadData();
+</script>
+</body>
+</html>

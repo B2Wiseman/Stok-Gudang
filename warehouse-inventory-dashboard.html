@@ -33,7 +33,7 @@
     <div class="stat"><div class="statlabel">Stok perlu perhatian</div><div class="statvalue" id="lowStock">—</div><div class="statfoot">Nilai stok rendah / di bawah 5</div></div>
   </section>
   <section class="panel" id="inventory">
-    <div class="panelhead"><div><h2>Data Inventaris</h2><div class="sub" id="tableSub">Seluruh kolom dari sheet akan ditampilkan di tabel ini</div></div>
+    <div class="panelhead"><div><h2>Data Inventaris</h2><div class="sub" id="tableSub">Seluruh kolom dari sheet • Sinkronisasi otomatis setiap 30 detik</div></div>
       <div class="toolbar"><input class="search" id="search" placeholder="⌕  Cari data inventaris…"><select class="select" id="columnFilter"><option value="">Semua kolom / kategori</option></select><button class="smallbtn" id="csv">Export CSV</button></div>
     </div>
     <div class="tablewrap"><div class="loading" id="loading"><span class="dot"></span>Mengambil data dari Google Sheets…</div><table id="dataTable" hidden><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" hidden>Tidak ada data yang cocok.</div></div>
@@ -49,7 +49,8 @@
 const SHEET_ID = '1lY4cg_O-tfeWTQklXNb8eq3X66AFDaeGf0b86XBhypc';
 const GID = '1146131498';
 const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
-let headers=[], rows=[], filtered=[];
+const AUTO_REFRESH_MS = 30000; // cek perubahan spreadsheet setiap 30 detik
+let headers=[], rows=[], filtered=[], isLoading=false, lastSnapshot='';
 const $ = id => document.getElementById(id);
 function showNotice(msg){$('notice').textContent=msg;$('notice').classList.add('show')}
 function parseGviz(text){
@@ -95,28 +96,39 @@ function cellHtml(header,value){
   }
   return escapeHtml(v);
 }
-async function loadData(){
-  $('refresh').disabled=true;$('loading').hidden=false;$('dataTable').hidden=true;$('empty').hidden=true;
+async function loadData({silent=false}={}){
+  if(isLoading)return;
+  isLoading=true;$('refresh').disabled=true;
+  if(!rows.length&&!silent){$('loading').hidden=false;$('dataTable').hidden=true;$('empty').hidden=true;}
   try{
-    const res=await fetch(GVIZ_URL,{cache:'no-store'});
+    // Parameter unik mencegah browser memakai hasil cache lama.
+    const url=GVIZ_URL+`&cacheBust=${Date.now()}`;
+    const res=await fetch(url,{cache:'no-store'});
     if(!res.ok)throw new Error(`HTTP ${res.status}. Periksa izin akses spreadsheet.`);
     const parsed=parseGviz(await res.text());
-    headers=parsed.headers;rows=parsed.rows;
-    if(!headers.length)throw new Error('Header sheet kosong atau tab tidak memiliki data.');
-    $('columnFilter').innerHTML='<option value="">Semua kolom / kategori</option>'+headers.map((h,i)=>`<option value="${i}">${escapeHtml(h)}</option>`).join('');
-    renderStats();renderTable();$('loading').hidden=true;
-    $('updated').textContent='Diperbarui '+new Date().toLocaleString('id-ID');
-    $('sideStatus').textContent='● Terhubung';$('sideStatus').style.color='#a6e5c7';
-    $('tableSub').textContent=`${headers.length} kolom • ${rows.length} baris data`;
+    if(!parsed.headers.length)throw new Error('Header sheet kosong atau tab tidak memiliki data.');
+    const snapshot=JSON.stringify(parsed);
+    const changed=snapshot!==lastSnapshot;
+    if(changed){
+      headers=parsed.headers;rows=parsed.rows;lastSnapshot=snapshot;
+      const previous=$('columnFilter').value;
+      $('columnFilter').innerHTML='<option value="">Semua kolom / kategori</option>'+headers.map((h,i)=>`<option value="${i}">${escapeHtml(h)}</option>`).join('');
+      if(previous!==''&&Number(previous)<headers.length)$('columnFilter').value=previous;
+      renderStats();renderTable();
+      $('tableSub').textContent=`${headers.length} kolom • ${rows.length} baris data • Sinkronisasi otomatis setiap 30 detik`;
+    }
+    $('loading').hidden=true;
+    const now=new Date().toLocaleTimeString('id-ID');
+    $('updated').textContent=`Sinkron terakhir ${now}${changed?' • Data diperbarui':' • Tidak ada perubahan'}`;
+    $('sideStatus').textContent='● Terhubung • Auto sync';$('sideStatus').style.color='#a6e5c7';
     $('notice').classList.remove('show');
   }catch(err){
-    $('loading').hidden=true;$('sideStatus').textContent='Koneksi belum tersedia';
-    showNotice('Data belum dapat dimuat: '+err.message+' Pastikan spreadsheet dapat dibaca publik, lalu refresh halaman.');
-    $('empty').hidden=false;$('empty').textContent='Belum ada data untuk ditampilkan. Periksa akses Google Spreadsheet.';
-    $('countInfo').textContent='Gagal mengambil data';
-  }finally{$('refresh').disabled=false}
+    $('loading').hidden=true;$('sideStatus').textContent='Koneksi terganggu';
+    showNotice('Gagal menyinkronkan data: '+err.message+' Pastikan spreadsheet dapat dibaca publik. Dashboard akan mencoba kembali otomatis.');
+    if(!rows.length){$('empty').hidden=false;$('empty').textContent='Belum ada data untuk ditampilkan. Periksa akses Google Spreadsheet.';$('countInfo').textContent='Gagal mengambil data';}
+  }finally{$('refresh').disabled=false;isLoading=false;}
 }
-$('refresh').addEventListener('click',loadData);
+$('refresh').addEventListener('click',()=>loadData());
 $('search').addEventListener('input',renderTable);
 $('columnFilter').addEventListener('change',renderTable);
 $('csv').addEventListener('click',()=>{
@@ -127,6 +139,10 @@ $('csv').addEventListener('click',()=>{
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='warehouse-inventory.csv';a.click();URL.revokeObjectURL(a.href);
 });
 loadData();
+// Polling: perubahan spreadsheet tampil otomatis maksimal sekitar 30 detik setelah terbaca Google.
+setInterval(()=>{if(!document.hidden)loadData({silent:true});},AUTO_REFRESH_MS);
+// Saat pengguna kembali ke tab, langsung cek data terbaru.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadData({silent:true});});
 </script>
 </body>
 </html>

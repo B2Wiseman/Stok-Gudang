@@ -105,11 +105,58 @@ function renderTable(){let d=sheet(activeSheet),headers=d.headers||[],rows=d.row
 function buildControls(headers,rows){let status=$('statusFilter'),sort=$('sortBy'),idx=col(headers,[/^status$/,/^kondisi$/,/status preorder/]);status.innerHTML='<option value="">Semua status</option>';if(idx>=0){[...new Set(rows.map(r=>String(r[idx]||'').trim()).filter(Boolean))].sort().forEach(v=>status.add(new Option(v,v)));status.classList.remove('hidden')}else status.classList.add('hidden');sort.innerHTML='<option value="">Urutkan: Default</option>';headers.forEach((h,i)=>sort.add(new Option('Urutkan: '+h,String(i))));}
 function drawTable(){let d=sheet(activeSheet),headers=d.headers||[],rows=d.rows||[],q=norm($('search').value),si=col(headers,[/^status$/,/^kondisi$/,/status preorder/]),selected=$('statusFilter').value;let result=rows.map((r,i)=>({r,rowNo:d.rowNumbers?.[i]||i+2})).filter(o=>(!q||o.r.some(v=>norm(v).includes(q)))&&(!selected||String(o.r[si]||'')===selected));let sort=$('sortBy').value;if(sort!==''){let ix=Number(sort),dir=$('sortDir').value==='desc'?-1:1;result.sort((a,b)=>{let av=num(a.r[ix]),bv=num(b.r[ix]);return av!==null&&bv!==null?(av-bv)*dir:String(a.r[ix]||'').localeCompare(String(b.r[ix]||''),'id',{numeric:true})*dir})}filteredRows=result.map(x=>x.r);$('thead').innerHTML='<tr>'+headers.map(h=>'<th>'+esc(h)+'</th>').join('')+(!READONLY_SHEETS.includes(activeSheet)?'<th>Aksi</th>':'')+'</tr>';$('tbody').innerHTML=result.map(o=>'<tr>'+headers.map((h,i)=>'<td>'+cell(h,o.r[i])+'</td>').join('')+(!READONLY_SHEETS.includes(activeSheet)?`<td><div class="row-actions"><button class="iconbtn" onclick="editRow(${o.rowNo})">Edit</button><button class="iconbtn" onclick="deleteRow(${o.rowNo})">Hapus</button></div></td>`:'')+'</tr>').join('');let has=result.length>0;$('dataTable').hidden=!has;$('empty').hidden=has;$('empty').textContent='Tidak ada data yang cocok.';$('loading').hidden=true;$('countInfo').textContent='Menampilkan '+fmt(result.length)+' dari '+fmt(rows.length)+' baris';}
 function cell(h,v){let n=norm(h),t=String(v??'');if(/status|kondisi/.test(n)){let c=/habis|ditolak|batal/.test(norm(t))?'zero':/hampir|menunggu|proses|sebagian/.test(norm(t))?'low':'';return '<span class="status '+c+'">'+esc(t)+'</span>'}return esc(t)}
-function openEditor(rowNo=null){if(READONLY_SHEETS.includes(activeSheet))return;let d=sheet(activeSheet),headers=d.headers||[],rowNoVal=rowNo,record=rowNo===null?[]:(d.rows[d.rowNumbers.indexOf(rowNo)]||[]);editing=rowNo===null?{mode:'add'}:{mode:'update',row:rowNo};$('modalTitle').textContent=rowNo===null?'Tambah '+TITLES[activeSheet]:'Edit '+TITLES[activeSheet];let allowed=EDITABLE[activeSheet]||[];let masterNames=masterData().map(x=>x.name);$('modalBody').innerHTML=headers.map((h,i)=>{let val=record[i]??'',isEdit=allowed.includes(i),type=/tanggal|estimasi/i.test(h)?'date':/qty|stok masuk|stok keluar/i.test(h)?'number':'text';if(!isEdit)return '';let input;if(activeSheet==='PreOrder'&&i===1||(['Stok Masuk','Stok Keluar'].includes(activeSheet)&&i===1)){input='<select data-col="'+i+'"><option value="">Pilih nama barang</option>'+masterNames.map(n=>`<option ${String(val)===n?'selected':''} value="${esc(n)}">${esc(n)}</option>`).join('')+'</select>'}else input=`<input data-col="${i}" type="${type}" value="${esc(val)}" ${type==='number'?'min="0" step="any"':''}>`;return `<div class="form-field"><label>${esc(h)}</label>${input}</div>`}).join('')+(activeSheet==='PreOrder'?'<div class="readonly-note">Sisa PO dan Status dihitung otomatis oleh rumus spreadsheet. Website hanya mengisi Qty Diterima dan kolom input lainnya.</div>':'')+(activeSheet==='Master Stok'?'<div class="readonly-note">Stok dan Status merupakan kolom formula dan tidak dapat diedit dari website.</div>':'');$('modalBackdrop').classList.add('show');}
+function isDateColumn(sheetName,index,header){
+  const known={
+    'Stok Masuk':[0],
+    'Stok Keluar':[0],
+    'PreOrder':[0,4,9]
+  };
+  return (known[sheetName]||[]).includes(index)||/(tanggal|tgl|date|estimasi kedatangan)/i.test(String(header||''));
+}
+function dateInputValue(value){
+  const s=String(value??'').trim();if(!s)return '';
+  let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m)return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  const d=new Date(s);if(!Number.isNaN(d.getTime()))return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return '';
+}
+function dateSheetValue(value){
+  if(!value)return '';const m=String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}/${m[2]}/${m[1]}`:value;
+}
+function openEditor(rowNo=null){
+  if(READONLY_SHEETS.includes(activeSheet))return;
+  let d=sheet(activeSheet),headers=d.headers||[],record=[];
+  if(rowNo!==null){const rowIndex=(d.rowNumbers||[]).indexOf(rowNo);record=rowIndex>=0?(d.rows[rowIndex]||[]):[];}
+  editing=rowNo===null?{mode:'add'}:{mode:'update',row:rowNo};
+  $('modalTitle').textContent=rowNo===null?'Tambah '+TITLES[activeSheet]:'Edit '+TITLES[activeSheet];
+  let allowed=EDITABLE[activeSheet]||[],masterNames=masterData().map(x=>x.name).filter(Boolean);
+  const productField=(activeSheet==='PreOrder'&&[1].includes(0))||(['Stok Masuk','Stok Keluar'].includes(activeSheet)&&1>=0);
+  $('modalBody').innerHTML=headers.map((h,i)=>{
+    let val=record[i]??'';if(!allowed.includes(i))return '';
+    let isProduct=(activeSheet==='PreOrder'&&i===1)||(['Stok Masuk','Stok Keluar'].includes(activeSheet)&&i===1);
+    let isDate=isDateColumn(activeSheet,i,h);
+    let type=isDate?'date':/qty|stok masuk|stok keluar/i.test(h)?'number':'text';
+    let input='';
+    if(isProduct){
+      const listId='barangOptions_'+activeSheet.replace(/\W/g,'_');
+      input=`<input data-col="${i}" type="text" list="${listId}" autocomplete="off" placeholder="Ketik nama barang..." value="${esc(val)}"><datalist id="${listId}">${masterNames.map(n=>`<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+    }else if(isDate){
+      input=`<input data-col="${i}" type="date" value="${esc(dateInputValue(val))}" aria-label="Pilih ${esc(h)}">`;
+    }else{
+      input=`<input data-col="${i}" type="${type}" value="${esc(val)}" ${type==='number'?'min="0" step="any"':''}>`;
+    }
+    const label=(activeSheet==='Stok Masuk'&&i===0)||(activeSheet==='Stok Keluar'&&i===0)?'Tanggal':h;
+    return `<div class="form-field"><label>${esc(label)}</label>${input}</div>`;
+  }).join('')+(activeSheet==='PreOrder'?'<div class="readonly-note">Sisa PO dan Status dihitung otomatis oleh rumus spreadsheet. Website hanya mengisi Qty Diterima dan kolom input lainnya.</div>':'')+(activeSheet==='Master Stok'?'<div class="readonly-note">Stok dan Status merupakan kolom formula dan tidak dapat diedit dari website.</div>':'');
+  $('modalBackdrop').classList.add('show');
+}
 function editRow(row){openEditor(row)}
 function deleteRow(row){if(!confirm('Hapus baris ini dari '+activeSheet+'? Penghapusan akan langsung diterapkan pada spreadsheet.'))return;write('delete',row,null)}
 function closeEditor(){$('modalBackdrop').classList.remove('show');editing=null}
-function saveEditor(){if(!editing)return;let d=sheet(activeSheet),values=editing.mode==='update'?(d.rows[d.rowNumbers.indexOf(editing.row)]||[]).slice():Array(d.headers.length).fill('');$('modalBody').querySelectorAll('[data-col]').forEach(el=>{let i=Number(el.dataset.col);values[i]=el.value});if(activeSheet==='PreOrder'&&num(values[2])!==null&&num(values[5])!==null&&num(values[5])>num(values[2])){alert('Qty Diterima tidak boleh melebihi Qty Pesanan.');return}write(editing.mode,editing.row,values)}
+function saveEditor(){if(!editing)return;let d=sheet(activeSheet),rowIndex=editing.mode==='update'?(d.rowNumbers||[]).indexOf(editing.row):-1,values=editing.mode==='update'?(rowIndex>=0?(d.rows[rowIndex]||[]).slice():[]):Array(d.headers.length).fill('');$('modalBody').querySelectorAll('[data-col]').forEach(el=>{let i=Number(el.dataset.col);values[i]=el.type==='date'?dateSheetValue(el.value):el.value});if(activeSheet==='PreOrder'&&num(values[2])!==null&&num(values[5])!==null&&num(values[5])>num(values[2])){alert('Qty Diterima tidak boleh melebihi Qty Pesanan.');return}write(editing.mode,editing.row,values)}
 function write(operation,row,values){$('saveModal').disabled=true;let params=new URLSearchParams({action:'write',sheet:activeSheet,operation});if(row!==null&&row!==undefined)params.set('row',row);if(values)params.set('payload',encodeURIComponent(JSON.stringify({values})));jsonp(API_URL+'?'+params.toString(),res=>{ $('saveModal').disabled=false;if(!res?.success){notice(res?.message||'Gagal menyimpan perubahan.');return}closeEditor();fetchData();});}
 function exportCSV(){let d=sheet(activeSheet);if(!d.headers?.length)return;let quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';let content=[d.headers,...filteredRows].map(r=>r.map(quote).join(',')).join('\r\n');let blob=new Blob(['\ufeff'+content],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=activeSheet.toLowerCase().replace(/\s+/g,'-')+'.csv';a.click();URL.revokeObjectURL(url)}
 $('nav').addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.page)showPage('overview');else if(b.dataset.sheet)showPage('table',b.dataset.sheet)});
